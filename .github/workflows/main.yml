@@ -1,0 +1,51 @@
+version: 7.4.{build}
+
+branches:
+  only:
+    - master
+    - appveyor
+
+skip_tags: true
+
+image:
+  - Visual Studio 2019
+
+environment:
+  data_folder: '%APPVEYOR_BUILD_FOLDER%\data'
+  project_folder: '%APPVEYOR_BUILD_FOLDER%\\src_rebuild'
+  dependency_folder: '%APPVEYOR_BUILD_FOLDER%\dependencies'
+  msix_output_folder: '%APPVEYOR_BUILD_FOLDER%\msix'
+  # Dependency URLs
+  windows_premake_url: 'https://github.com/premake/premake-core/releases/download/v5.0.0-beta1/premake-5.0.0-beta1-windows.zip'
+  windows_jpeg_url: 'http://www.ijg.org/files/jpegsr9d.zip'
+  windows_openal_url: 'https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip'
+  windows_sdl2_url: 'https://www.libsdl.org/release/SDL2-devel-2.0.20-VC.zip'
+  # Dependency Directories
+  windows_jpeg_dir: '%dependency_folder%\jpeg-9d'
+  windows_openal_dir: '%dependency_folder%\openal-soft-1.21.1-bin'
+  windows_sdl2_dir: '%dependency_folder%\SDL2-2.0.20'
+
+install:
+  - git submodule init
+  - git submodule update
+  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\Install.bat'
+
+build_script:
+  # Build the MSIX package using MSBuild
+  - cmd: msbuild /p:Configuration=Release /p:Platform=x64 /t:Restore,Rebuild "%project_folder%\MyApp.sln"
+  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\BuildMsix.bat'
+
+after_build:
+  # Run any post-build steps
+  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\AfterBuild.bat'
+
+cache:
+  # Cache dependencies and MSIX package build directories
+  - '%dependency_folder%\'
+  - '%msix_output_folder%\'
+
+artifacts:
+  # Output the MSIX package
+  - path: '%msix_output_folder%\*.msix'
+    name: MSIX Package
+    
