@@ -8,13 +8,22 @@ branches:
 skip_tags: true
 
 image:
-  - Visual Studio 2019
+  - Visual Studio 2022
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 environment:
   data_folder: '%APPVEYOR_BUILD_FOLDER%\data'
-  project_folder: '%APPVEYOR_BUILD_FOLDER%\\src_rebuild'
+  project_folder: '%APPVEYOR_BUILD_FOLDER%\src_rebuild'
   dependency_folder: '%APPVEYOR_BUILD_FOLDER%\dependencies'
   msix_output_folder: '%APPVEYOR_BUILD_FOLDER%\msix'
+  uwp_platform: 'x64'
   # Dependency URLs
   windows_premake_url: 'https://github.com/premake/premake-core/releases/download/v5.0.0-beta1/premake-5.0.0-beta1-windows.zip'
   windows_jpeg_url: 'http://www.ijg.org/files/jpegsr9d.zip'
@@ -31,21 +40,20 @@ install:
   - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\Install.bat'
 
 build_script:
-  # Build the MSIX package using MSBuild
-  - cmd: msbuild /p:Configuration=Release /p:Platform=x64 /t:Restore,Rebuild "%project_folder%\MyApp.sln"
-  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\BuildMsix.bat'
+  # Build the UWP MSIX package
+  - cmd: msbuild "%project_folder%\MyApp.sln" /p:AppxBundlePlatforms=%uwp_platform% /p:Configuration=Release /p:Platform=%uwp_platform% /t:Restore,Rebuild
 
 after_build:
-  # Run any post-build steps
+  # Run any post-build steps (e.g., signing MSIX, publishing artifacts)
   - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\AfterBuild.bat'
 
 cache:
-  # Cache dependencies and MSIX package build directories
+  # Cache dependencies and build directories
   - '%dependency_folder%\'
   - '%msix_output_folder%\'
 
 artifacts:
-  # Output the MSIX package
+  # Collect the UWP MSIX package
   - path: '%msix_output_folder%\*.msix'
     name: MSIX Package
     
