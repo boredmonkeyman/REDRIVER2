@@ -27,7 +27,7 @@ jobs:
       # Step 3: Set up dependencies
       - name: Install Dependencies
         run: |
-          .\appveyor\Install.bat
+          .\.appveyor\Install.bat
 
       # Step 4: Build UWP MSIX Package
       - name: Build MSIX Package
@@ -41,7 +41,7 @@ jobs:
       # Step 5: Post-build steps (if needed)
       - name: Post-Build Steps
         run: |
-          .\appveyor\AfterBuild.bat
+          .\.appveyor\AfterBuild.bat
 
       # Step 6: Upload the MSIX as an artifact
       - name: Upload MSIX Artifact
