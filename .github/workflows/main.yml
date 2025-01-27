@@ -27,21 +27,21 @@ jobs:
       # Step 3: Set up dependencies
       - name: Install Dependencies
         run: |
-          call .appveyor\Install.bat
+          .\appveyor\Install.bat
 
       # Step 4: Build UWP MSIX Package
       - name: Build MSIX Package
         run: |
-          msbuild src_rebuild\MyApp.sln ^
-            /p:AppxBundlePlatforms=x64 ^
-            /p:Configuration=Release ^
-            /p:Platform=x64 ^
+          msbuild .\src_rebuild\MyApp.sln `
+            /p:AppxBundlePlatforms=x64 `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
             /t:Restore,Rebuild
 
       # Step 5: Post-build steps (if needed)
       - name: Post-Build Steps
         run: |
-          call .appveyor\AfterBuild.bat
+          .\appveyor\AfterBuild.bat
 
       # Step 6: Upload the MSIX as an artifact
       - name: Upload MSIX Artifact
