@@ -1,43 +1,52 @@
-version: 7.4.{build}
+name: Build UWP MSIX Package
 
-branches:
-  only:
-    - master
-    - appveyor
-
-skip_tags: true
-
-image:
-  - Visual Studio 2022
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
-    name: Build UWP MSIX Package
+    name: Build MSIX Package
+    runs-on: windows-latest
+
     steps:
-      - script: |
-          echo Initializing Submodules...
+      # Step 1: Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Initialize submodules
+      - name: Initialize Submodules
+        run: |
           git submodule init
           git submodule update
-      - script: |
-          echo Installing Dependencies...
-          call "%APPVEYOR_BUILD_FOLDER%\.appveyor\Install.bat"
-      - script: |
-          echo Building UWP MSIX Package...
-          msbuild "%APPVEYOR_BUILD_FOLDER%\src_rebuild\MyApp.sln" ^
+
+      # Step 3: Set up dependencies
+      - name: Install Dependencies
+        run: |
+          call .appveyor\Install.bat
+
+      # Step 4: Build UWP MSIX Package
+      - name: Build MSIX Package
+        run: |
+          msbuild src_rebuild\MyApp.sln ^
             /p:AppxBundlePlatforms=x64 ^
             /p:Configuration=Release ^
             /p:Platform=x64 ^
             /t:Restore,Rebuild
-      - script: |
-          echo Running Post-Build Steps...
-          call "%APPVEYOR_BUILD_FOLDER%\.appveyor\AfterBuild.bat"
 
-artifacts:
-  # Collect the UWP MSIX package
-  - path: '%APPVEYOR_BUILD_FOLDER%\msix\*.msix'
-    name: MSIX Package
+      # Step 5: Post-build steps (if needed)
+      - name: Post-Build Steps
+        run: |
+          call .appveyor\AfterBuild.bat
 
-cache:
-  - '%APPVEYOR_BUILD_FOLDER%\dependencies'
-  - '%APPVEYOR_BUILD_FOLDER%\msix'
-  
+      # Step 6: Upload the MSIX as an artifact
+      - name: Upload MSIX Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: MSIX Package
+          path: msix/*.msix
+          
