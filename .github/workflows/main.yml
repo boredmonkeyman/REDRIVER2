@@ -10,50 +10,34 @@ skip_tags: true
 image:
   - Visual Studio 2022
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-
-environment:
-  data_folder: '%APPVEYOR_BUILD_FOLDER%\data'
-  project_folder: '%APPVEYOR_BUILD_FOLDER%\src_rebuild'
-  dependency_folder: '%APPVEYOR_BUILD_FOLDER%\dependencies'
-  msix_output_folder: '%APPVEYOR_BUILD_FOLDER%\msix'
-  uwp_platform: 'x64'
-  # Dependency URLs
-  windows_premake_url: 'https://github.com/premake/premake-core/releases/download/v5.0.0-beta1/premake-5.0.0-beta1-windows.zip'
-  windows_jpeg_url: 'http://www.ijg.org/files/jpegsr9d.zip'
-  windows_openal_url: 'https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip'
-  windows_sdl2_url: 'https://www.libsdl.org/release/SDL2-devel-2.0.20-VC.zip'
-  # Dependency Directories
-  windows_jpeg_dir: '%dependency_folder%\jpeg-9d'
-  windows_openal_dir: '%dependency_folder%\openal-soft-1.21.1-bin'
-  windows_sdl2_dir: '%dependency_folder%\SDL2-2.0.20'
-
-install:
-  - git submodule init
-  - git submodule update
-  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\Install.bat'
-
-build_script:
-  # Build the UWP MSIX package
-  - cmd: msbuild "%project_folder%\MyApp.sln" /p:AppxBundlePlatforms=%uwp_platform% /p:Configuration=Release /p:Platform=%uwp_platform% /t:Restore,Rebuild
-
-after_build:
-  # Run any post-build steps (e.g., signing MSIX, publishing artifacts)
-  - cmd: '%APPVEYOR_BUILD_FOLDER%\.appveyor\AfterBuild.bat'
-
-cache:
-  # Cache dependencies and build directories
-  - '%dependency_folder%\'
-  - '%msix_output_folder%\'
+jobs:
+  build:
+    name: Build UWP MSIX Package
+    steps:
+      - script: |
+          echo Initializing Submodules...
+          git submodule init
+          git submodule update
+      - script: |
+          echo Installing Dependencies...
+          call "%APPVEYOR_BUILD_FOLDER%\.appveyor\Install.bat"
+      - script: |
+          echo Building UWP MSIX Package...
+          msbuild "%APPVEYOR_BUILD_FOLDER%\src_rebuild\MyApp.sln" ^
+            /p:AppxBundlePlatforms=x64 ^
+            /p:Configuration=Release ^
+            /p:Platform=x64 ^
+            /t:Restore,Rebuild
+      - script: |
+          echo Running Post-Build Steps...
+          call "%APPVEYOR_BUILD_FOLDER%\.appveyor\AfterBuild.bat"
 
 artifacts:
   # Collect the UWP MSIX package
-  - path: '%msix_output_folder%\*.msix'
+  - path: '%APPVEYOR_BUILD_FOLDER%\msix\*.msix'
     name: MSIX Package
-    
+
+cache:
+  - '%APPVEYOR_BUILD_FOLDER%\dependencies'
+  - '%APPVEYOR_BUILD_FOLDER%\msix'
+  
