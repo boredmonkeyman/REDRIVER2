@@ -1,0 +1,53 @@
+name: Windows Store Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      DATA_FOLDER: ${{ github.workspace }}\data
+      PROJECT_FOLDER: ${{ github.workspace }}\src_rebuild
+      DEPENDENCY_FOLDER: ${{ github.workspace }}\dependencies
+      WINDOWS_PREMAKE_URL: 'https://github.com/premake/premake-core/releases/download/v5.0.0-beta1/premake-5.0.0-beta1-windows.zip'
+      WINDOWS_JPEG_URL: 'http://www.ijg.org/files/jpegsr9d.zip'
+      WINDOWS_OPENAL_URL: 'https://openal-soft.org/openal-binaries/openal-soft-1.21.1-bin.zip'
+      WINDOWS_SDL2_URL: 'https://www.libsdl.org/release/SDL2-devel-2.0.20-VC.zip'
+      WINDOWS_JPEG_DIR: ${{ env.DEPENDENCY_FOLDER }}\jpeg-9d
+      WINDOWS_OPENAL_DIR: ${{ env.DEPENDENCY_FOLDER }}\openal-soft-1.21.1-bin
+      WINDOWS_SDL2_DIR: ${{ env.DEPENDENCY_FOLDER }}\SDL2-2.0.20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Set up dependencies
+        run: |
+          mkdir -p $env:DEPENDENCY_FOLDER
+          Invoke-WebRequest -Uri $env:WINDOWS_PREMAKE_URL -OutFile "$env:DEPENDENCY_FOLDER\premake.zip"
+          Expand-Archive -Path "$env:DEPENDENCY_FOLDER\premake.zip" -DestinationPath "$env:DEPENDENCY_FOLDER\premake"
+          Invoke-WebRequest -Uri $env:WINDOWS_JPEG_URL -OutFile "$env:DEPENDENCY_FOLDER\jpeg.zip"
+          Expand-Archive -Path "$env:DEPENDENCY_FOLDER\jpeg.zip" -DestinationPath "$env:WINDOWS_JPEG_DIR"
+          Invoke-WebRequest -Uri $env:WINDOWS_OPENAL_URL -OutFile "$env:DEPENDENCY_FOLDER\openal.zip"
+          Expand-Archive -Path "$env:DEPENDENCY_FOLDER\openal.zip" -DestinationPath "$env:WINDOWS_OPENAL_DIR"
+          Invoke-WebRequest -Uri $env:WINDOWS_SDL2_URL -OutFile "$env:DEPENDENCY_FOLDER\sdl2.zip"
+          Expand-Archive -Path "$env:DEPENDENCY_FOLDER\sdl2.zip" -DestinationPath "$env:WINDOWS_SDL2_DIR"
+
+      - name: Build the project
+        run: |
+          msbuild /p:Configuration=Release /p:Platform=x64 /p:AppxBundle=Always /p:AppxBundlePlatforms="x64" /p:UapAppxPackageBuildMode=StoreUpload /p:AppxPackageDir="$env:PROJECT_FOLDER\AppxPackages\\" "$env:PROJECT_FOLDER\YourProject.sln"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: WindowsStorePackage
+          path: ${{ env.PROJECT_FOLDER }}\AppxPackages\*.appxupload
